@@ -1,0 +1,14 @@
+legacy_fastapi_reference/
+.env
+*.db
+*.sqlite
+*.sqlite3
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+staticfiles/
+media/
