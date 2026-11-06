@@ -7,6 +7,7 @@ Secrets and deployment values are read from environment variables (12-factor sty
 so nothing sensitive is ever committed.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -101,3 +102,34 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Expense Tracker <noreply@example.com>")
+
+# --- Authentication -------------------------------------------------------------------
+# Tried in order. Ours lets people log in with either their email or their username
+# (the React login form has a single "username" box); the default backend stays for the admin.
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.backends.EmailOrUsernameBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# --- Cache -----------------------------------------------------------------------------
+# Per-process memory cache: enough for development and for DRF's throttle counters.
+# (Day 6 reuses it for analytics; production could swap in Redis with one setting change.)
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+# --- Django REST Framework ------------------------------------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
+    # Secure by default: every endpoint needs a valid token unless a view opts out.
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    # Throttling replaces slowapi. "Scoped" throttles are switched on per view.
+    "DEFAULT_THROTTLE_RATES": {"signup": "5/min", "login": "10/min"},
+    # The frontend expects {"detail": "..."} for every error.
+    "EXCEPTION_HANDLER": "config.exceptions.api_exception_handler",
+    # Money is returned as a JSON number (the old API did that), not a string.
+    "COERCE_DECIMAL_TO_STRING": False,
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),  # same lifetime as the FastAPI version
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
