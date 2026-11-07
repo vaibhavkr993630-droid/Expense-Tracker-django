@@ -40,3 +40,23 @@ def auth_client(api_client, user):
     """An API client already logged in as `user` (force_authenticate skips the token step)."""
     api_client.force_authenticate(user=user)
     return api_client
+
+
+@pytest.fixture
+def make_expense(db):
+    """Factory fixture: make_expense(user, amount=10, category="Groceries", date=...)."""
+    from datetime import date as date_cls
+    from decimal import Decimal
+
+    from apps.expenses.models import Expense
+
+    def _make(user, amount="10.00", category="Groceries", description="", date=None):
+        return Expense.objects.create(
+            user=user,
+            amount=Decimal(str(amount)),
+            category=category,
+            description=description,
+            date=date or date_cls(2026, 5, 15),
+        )
+
+    return _make
