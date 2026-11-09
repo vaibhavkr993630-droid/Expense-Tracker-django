@@ -123,6 +123,7 @@ REST_FRAMEWORK = {
     # Secure by default: every endpoint needs a valid token unless a view opts out.
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     # Throttling replaces slowapi. "Scoped" throttles are switched on per view.
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_THROTTLE_RATES": {"signup": "5/min", "login": "10/min"},
     # The frontend expects {"detail": "..."} for every error.
     "EXCEPTION_HANDLER": "config.exceptions.api_exception_handler",
