@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     # Local apps
     "apps.accounts",
     "apps.expenses",
+    "apps.budgets",
 ]
 
 MIDDLEWARE = [

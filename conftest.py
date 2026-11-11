@@ -60,3 +60,18 @@ def make_expense(db):
         )
 
     return _make
+
+
+@pytest.fixture
+def make_budget(db):
+    """Factory fixture: make_budget(user, category="Groceries", amount=100, month=5, year=2026)."""
+    from decimal import Decimal
+
+    from apps.budgets.models import Budget
+
+    def _make(user, category="Groceries", amount="100.00", month=5, year=2026):
+        return Budget.objects.create(
+            user=user, category=category, amount=Decimal(str(amount)), month=month, year=year
+        )
+
+    return _make
