@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.expenses",
     "apps.budgets",
+    "apps.analytics",
 ]
 
 MIDDLEWARE = [
@@ -136,3 +137,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),  # same lifetime as the FastAPI version
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+# How long analytics results stay cached (seconds). Changes to a user's expenses make their
+# cached results obsolete immediately (see apps/analytics/cache.py), so this is only an upper bound.
+ANALYTICS_CACHE_TTL = 300

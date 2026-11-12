@@ -49,6 +49,15 @@ class ExpenseQuerySet(models.QuerySet):
         # __month / __year lookups translate to the database's date-extraction functions.
         return self.filter(date__month=month, date__year=year)
 
+    def in_period(self, month=None, year=None):
+        """Filter by month and/or year; each is optional (used by the category breakdown)."""
+        queryset = self
+        if month:
+            queryset = queryset.filter(date__month=month)
+        if year:
+            queryset = queryset.filter(date__year=year)
+        return queryset
+
     def total(self):
         """Sum of amounts, as a Decimal (0 when there are no rows) - one SQL query."""
         return self.aggregate(total=Sum("amount"))["total"] or 0
