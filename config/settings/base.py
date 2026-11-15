@@ -104,6 +104,13 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+# Real SMTP only when credentials exist; otherwise emails are printed to the console so the app
+# never crashes (or silently loses mail) because of missing configuration.
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST_USER
+    else "django.core.mail.backends.console.EmailBackend"
+)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Expense Tracker <noreply@example.com>")
 
 # --- Authentication -------------------------------------------------------------------

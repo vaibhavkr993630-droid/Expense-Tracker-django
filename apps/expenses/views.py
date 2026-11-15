@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from apps.budgets.notifications import notify_budget_alerts
 from apps.core.permissions import IsOwner
 
 from .filters import ExpenseFilter
@@ -42,8 +43,24 @@ class ExpenseViewSet(ModelViewSet):
         except Http404:
             raise NotFound(NOT_FOUND_MESSAGES.get(self.action, "Not found.")) from None
 
+    # After every change we re-check the user's budgets for the affected month(s).
+    # perform_create / perform_update / perform_destroy are the hooks DRF calls to do the actual save.
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)  # the owner always comes from the token
+        expense = serializer.save(user=self.request.user)  # the owner always comes from the token
+        notify_budget_alerts(self.request.user, expense.date.month, expense.date.year)
+
+    def perform_update(self, serializer):
+        old_period = (serializer.instance.date.month, serializer.instance.date.year)
+        expense = serializer.save()
+        # If the date moved to another month, both months' spending changed.
+        for month, year in {old_period, (expense.date.month, expense.date.year)}:
+            notify_budget_alerts(self.request.user, month, year)
+
+    def perform_destroy(self, instance):
+        month, year = instance.date.month, instance.date.year
+        instance.delete()
+        # Less spending can bring a budget back to "ok", which resets its alert level.
+        notify_budget_alerts(self.request.user, month, year)
 
     # The responses below keep the old API's shapes (the React app depends on them).
     def create(self, request, *args, **kwargs):

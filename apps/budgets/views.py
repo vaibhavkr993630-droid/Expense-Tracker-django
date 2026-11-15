@@ -10,6 +10,7 @@ from apps.core.permissions import IsOwner
 from apps.core.serializers import get_month_and_year
 
 from .models import Budget
+from .notifications import notify_budget_alerts
 from .serializers import BudgetAlertsResponseSerializer, BudgetSerializer
 from .services import get_budget_alerts
 
@@ -58,6 +59,8 @@ class BudgetViewSet(
             year=data["year"],
             defaults={"amount": data["amount"]},
         )
+        # A new or lowered budget may already be exceeded by this month's spending.
+        notify_budget_alerts(request.user, budget.month, budget.year)
         # 201 in both cases: that is what the old API (and therefore the frontend) does.
         return Response(self.get_serializer(budget).data, status=status.HTTP_201_CREATED)
 

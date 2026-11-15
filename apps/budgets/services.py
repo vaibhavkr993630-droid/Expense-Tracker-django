@@ -67,6 +67,8 @@ def get_budget_alerts(user, month, year):
         percentage, status = budget_status(spent, budget.amount)
         alerts.append(
             {
+                "budget_id": budget.id,
+                "previous_status": budget.last_alert_status,
                 "category": budget.category,
                 "budget_limit": budget.amount,
                 "spent": spent,

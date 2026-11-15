@@ -36,6 +36,8 @@ def test_alert_values(user, make_budget, make_expense):
     make_expense(user, amount="70.50", category="Groceries")
     [alert] = get_budget_alerts(user, 5, 2026)
     assert alert == {
+        "budget_id": alert["budget_id"],
+        "previous_status": "",
         "category": "Groceries",
         "budget_limit": Decimal("200"),
         "spent": Decimal("170.50"),

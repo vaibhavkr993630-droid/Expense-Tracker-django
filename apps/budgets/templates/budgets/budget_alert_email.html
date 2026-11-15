@@ -1,0 +1,22 @@
+<html>
+  <body style="font-family: Arial, sans-serif; color: #222;">
+    <h2>Budget alert: {{ month_name }} {{ year }}</h2>
+    <p>Hi <strong>{{ username }}</strong>, some of your budgets need attention:</p>
+    <table cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
+      <tr style="background: #f0f0f5; text-align: left;">
+        <th>Category</th><th>Spent</th><th>Limit</th><th>Used</th><th>Status</th>
+      </tr>
+      {% for alert in alerts %}
+      <tr style="border-top: 1px solid #ddd;">
+        <td>{{ alert.category }}</td>
+        <td>${{ alert.spent|floatformat:2 }}</td>
+        <td>${{ alert.budget_limit|floatformat:2 }}</td>
+        <td>{{ alert.percentage_used|floatformat:1 }}%</td>
+        <td style="font-weight: bold; color: {% if alert.status == 'exceeded' %}#c62828{% else %}#e65100{% endif %};">
+          {{ alert.status|upper }}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

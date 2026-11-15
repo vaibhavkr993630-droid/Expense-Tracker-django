@@ -24,6 +24,10 @@ class Budget(models.Model):
     month = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
     year = models.PositiveSmallIntegerField(validators=[MinValueValidator(2000), MaxValueValidator(2100)])
 
+    # The alert level we last emailed about ("", "warning" or "exceeded"). Lets us email only when
+    # the situation gets worse, instead of on every expense or every scheduled run.
+    last_alert_status = models.CharField(max_length=10, blank=True, default="")
+
     objects = BudgetQuerySet.as_manager()
 
     class Meta:

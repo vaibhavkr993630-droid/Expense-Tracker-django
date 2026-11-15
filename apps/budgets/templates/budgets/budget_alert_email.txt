@@ -1,0 +1,8 @@
+Hi {{ username }},
+
+Some of your budgets need attention for {{ month_name }} {{ year }}:
+{% for alert in alerts %}
+- {{ alert.category }}: {{ alert.status|upper }}
+  spent ${{ alert.spent|floatformat:2 }} of ${{ alert.budget_limit|floatformat:2 }} ({{ alert.percentage_used|floatformat:1 }}% used)
+{% endfor %}
+Log in to Expense Tracker to review your spending or adjust your budgets.
