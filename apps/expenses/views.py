@@ -1,13 +1,18 @@
-from django.http import Http404
+from django.http import Http404, HttpResponse, StreamingHttpResponse
+from django.utils import timezone
+from django_filters.utils import translate_validation
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import ModelViewSet
 
 from apps.budgets.notifications import notify_budget_alerts
 from apps.core.permissions import IsOwner
 
+from . import exports
 from .filters import ExpenseFilter
 from .models import Expense
 from .pagination import ExpensePagination
@@ -32,6 +37,8 @@ class ExpenseViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, IsOwner]
     pagination_class = ExpensePagination
     filterset_class = ExpenseFilter  # applied by the DjangoFilterBackend set in settings
+    # Must exist on the class so @action(throttle_scope=...) below may override it per action.
+    throttle_scope = None
 
     def get_queryset(self):
         # The most important line for data isolation: other users' rows are never even queried.
@@ -77,3 +84,56 @@ class ExpenseViewSet(ModelViewSet):
         kwargs["partial"] = True  # PUT only changes the fields that were sent, like before
         super().update(request, *args, **kwargs)
         return Response({"message": f"Expense with ID {kwargs['pk']} successfully updated."})
+
+    # --- Exports -----------------------------------------------------------------------------
+    # `@action(detail=False)` adds extra routes to the viewset: /expenses/export/csv and /pdf.
+    # They accept the same filters as the list endpoint but are not paginated. The router
+    # matches these before /expenses/{id}.
+
+    def _filtered_for_export(self, request):
+        """The user's expenses after applying the query-string filters, plus the effective date range."""
+        filterset = ExpenseFilter(request.query_params, queryset=self.get_queryset(), request=request)
+        if not filterset.is_valid():
+            raise translate_validation(filterset.errors)
+        return filterset.qs, filterset.date_range()
+
+    @staticmethod
+    def _filename(extension):
+        return f"expenses_{timezone.localdate():%Y%m%d}.{extension}"
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="export/csv",
+        pagination_class=None,
+        throttle_classes=[ScopedRateThrottle],
+        throttle_scope="export",
+    )
+    def export_csv(self, request):
+        expenses, _ = self._filtered_for_export(request)
+        response = StreamingHttpResponse(exports.iter_csv(expenses), content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="{self._filename("csv")}"'
+        return response
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="export/pdf",
+        pagination_class=None,
+        throttle_classes=[ScopedRateThrottle],
+        throttle_scope="export",
+    )
+    def export_pdf(self, request):
+        queryset, (from_date, to_date) = self._filtered_for_export(request)
+        expenses = list(queryset[: exports.PDF_MAX_ROWS + 1])
+        if len(expenses) > exports.PDF_MAX_ROWS:
+            message = (
+                f"Too many expenses for a PDF (over {exports.PDF_MAX_ROWS}). Narrow the range or use CSV."
+            )
+            raise ValidationError({"detail": message})
+        pdf_bytes = exports.build_expenses_pdf(
+            expenses, request.user.username, from_date, to_date, generated_at=timezone.localtime()
+        )
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{self._filename("pdf")}"'
+        return response

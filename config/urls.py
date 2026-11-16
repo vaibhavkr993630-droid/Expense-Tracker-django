@@ -2,6 +2,10 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
+admin.site.site_header = "Expense Tracker administration"
+admin.site.site_title = "Expense Tracker admin"
+admin.site.index_title = "Manage users, expenses and budgets"
+
 
 def health_check(request):
     """Liveness probe used by Docker, load balancers and the frontend proxy."""

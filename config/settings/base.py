@@ -133,7 +133,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     # Throttling replaces slowapi. "Scoped" throttles are switched on per view.
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
-    "DEFAULT_THROTTLE_RATES": {"signup": "5/min", "login": "10/min"},
+    "DEFAULT_THROTTLE_RATES": {"signup": "5/min", "login": "10/min", "export": "30/min"},
     # The frontend expects {"detail": "..."} for every error.
     "EXCEPTION_HANDLER": "config.exceptions.api_exception_handler",
     # Money is returned as a JSON number (the old API did that), not a string.

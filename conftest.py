@@ -75,3 +75,12 @@ def make_budget(db):
         )
 
     return _make
+
+
+@pytest.fixture
+def admin_user(db):
+    """
+    Overrides pytest-django's built-in `admin_user` (which assumes a `username` login field).
+    The built-in `admin_client` fixture then logs in as this superuser.
+    """
+    return User.objects.create_superuser(email="root@example.com", username="root", password="StrongPass123")
