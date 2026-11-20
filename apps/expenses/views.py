@@ -1,7 +1,9 @@
 from django.http import Http404, HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 from django_filters.utils import translate_validation
-from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +13,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from apps.budgets.notifications import notify_budget_alerts
 from apps.core.permissions import IsOwner
+from apps.core.schema import ErrorSerializer
 
 from . import exports
 from .filters import ExpenseFilter
@@ -25,6 +28,62 @@ NOT_FOUND_MESSAGES = {
 }
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Expenses"],
+        summary="List my expenses",
+        description=(
+            "Newest first, paginated. Filters: `from_date`, `to_date`, `period` (`week`, `month`, `3months`; "
+            "overrides the dates) and `category`. Use `page` and `limit` (max 100) to paginate."
+        ),
+        responses={200: ExpenseSerializer(many=True), 400: ErrorSerializer, 401: ErrorSerializer},
+    ),
+    create=extend_schema(
+        tags=["Expenses"],
+        summary="Add an expense",
+        description="`category` is case-insensitive. `date` defaults to today.",
+        responses={
+            201: inline_serializer(
+                "ExpenseCreatedResponse",
+                {"message": serializers.CharField(), "id": serializers.IntegerField()},
+            ),
+            400: ErrorSerializer,
+            401: ErrorSerializer,
+        },
+    ),
+    retrieve=extend_schema(
+        tags=["Expenses"],
+        summary="Get one expense",
+        responses={200: ExpenseSerializer, 401: ErrorSerializer, 404: ErrorSerializer},
+    ),
+    update=extend_schema(
+        tags=["Expenses"],
+        summary="Update an expense",
+        description="Only the fields you send are changed.",
+        responses={
+            200: inline_serializer("ExpenseUpdatedResponse", {"message": serializers.CharField()}),
+            400: ErrorSerializer,
+            401: ErrorSerializer,
+            404: ErrorSerializer,
+        },
+    ),
+    partial_update=extend_schema(
+        tags=["Expenses"],
+        summary="Update an expense (PATCH)",
+        description="Same as PUT.",
+        responses={
+            200: inline_serializer("ExpensePatchedResponse", {"message": serializers.CharField()}),
+            400: ErrorSerializer,
+            401: ErrorSerializer,
+            404: ErrorSerializer,
+        },
+    ),
+    destroy=extend_schema(
+        tags=["Expenses"],
+        summary="Delete an expense",
+        responses={204: None, 401: ErrorSerializer, 404: ErrorSerializer},
+    ),
+)
 class ExpenseViewSet(ModelViewSet):
     """
     CRUD for the logged-in user's expenses.
@@ -41,6 +100,8 @@ class ExpenseViewSet(ModelViewSet):
     throttle_scope = None
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # the docs generator calls this without a real user
+            return Expense.objects.none()
         # The most important line for data isolation: other users' rows are never even queried.
         return Expense.objects.for_user(self.request.user)
 
@@ -101,6 +162,13 @@ class ExpenseViewSet(ModelViewSet):
     def _filename(extension):
         return f"expenses_{timezone.localdate():%Y%m%d}.{extension}"
 
+    @extend_schema(
+        tags=["Expenses"],
+        summary="Export expenses as CSV",
+        description="Same filters as the list (no pagination). Limited to 30 requests/minute.",
+        filters=True,
+        responses={(200, "text/csv"): OpenApiTypes.STR, 400: ErrorSerializer, 401: ErrorSerializer},
+    )
     @action(
         detail=False,
         methods=["get"],
@@ -115,6 +183,13 @@ class ExpenseViewSet(ModelViewSet):
         response["Content-Disposition"] = f'attachment; filename="{self._filename("csv")}"'
         return response
 
+    @extend_schema(
+        tags=["Expenses"],
+        summary="Export expenses as PDF",
+        description="Same filters as the list. Refused (400) above 5000 rows; use CSV for those.",
+        filters=True,
+        responses={(200, "application/pdf"): OpenApiTypes.BINARY, 400: ErrorSerializer, 401: ErrorSerializer},
+    )
     @action(
         detail=False,
         methods=["get"],

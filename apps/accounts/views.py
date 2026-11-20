@@ -1,11 +1,14 @@
 from django.contrib.auth import authenticate
-from rest_framework import generics, status
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
+from rest_framework import generics, serializers, status
 from rest_framework.parsers import FormParser, JSONParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
+
+from apps.core.schema import ErrorSerializer
 
 from .serializers import (
     ChangePasswordSerializer,
@@ -16,6 +19,20 @@ from .serializers import (
 )
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Authentication"],
+        summary="Register a new user",
+        auth=[],  # no token needed
+        responses={
+            201: inline_serializer(
+                "SignupResponse", {"detail": serializers.CharField(), "id": serializers.IntegerField()}
+            ),
+            400: ErrorSerializer,
+            429: ErrorSerializer,
+        },
+    )
+)
 class SignupView(generics.CreateAPIView):
     """POST /signup: register a new user."""
 
@@ -50,6 +67,25 @@ class LoginView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Log in and get an access token",
+        description=(
+            "Send `username` (username or email) and `password` as form fields. "
+            "Limited to 10 requests/minute."
+        ),
+        auth=[],
+        request={"application/x-www-form-urlencoded": LoginSerializer, "application/json": LoginSerializer},
+        responses={
+            200: inline_serializer(
+                "LoginResponse",
+                {"access_token": serializers.CharField(), "token_type": serializers.CharField()},
+            ),
+            400: ErrorSerializer,
+            401: ErrorSerializer,
+            429: ErrorSerializer,
+        },
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -65,6 +101,29 @@ class LoginView(APIView):
         return Response({"access_token": str(token), "token_type": "bearer"})
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Users"], summary="Get my profile", responses={200: UserSerializer, 401: ErrorSerializer}
+    ),
+    put=extend_schema(
+        tags=["Users"],
+        summary="Change my username",
+        request=UpdateUsernameSerializer,
+        responses={
+            200: inline_serializer(
+                "UpdateUsernameResponse",
+                {"msg": serializers.CharField(), "username": serializers.CharField()},
+            ),
+            400: ErrorSerializer,
+            401: ErrorSerializer,
+        },
+    ),
+    delete=extend_schema(
+        tags=["Users"],
+        summary="Delete my account and all my data",
+        responses={204: None, 401: ErrorSerializer},
+    ),
+)
 class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     """
     The logged-in user's own account.
@@ -90,9 +149,24 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
         return Response({"msg": "Username updated successfully.", "username": user.username})
 
 
+@extend_schema(exclude=True)  # same behaviour as /users/me; hidden so the docs list each operation once
+class LegacyProfileView(ProfileView):
+    """PUT/DELETE /user: URL kept from the FastAPI API."""
+
+
 class ChangePasswordView(APIView):
     """PATCH /users/change-password"""
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Change my password",
+        request=ChangePasswordSerializer,
+        responses={
+            200: inline_serializer("ChangePasswordResponse", {"msg": serializers.CharField()}),
+            400: ErrorSerializer,
+            401: ErrorSerializer,
+        },
+    )
     def patch(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)

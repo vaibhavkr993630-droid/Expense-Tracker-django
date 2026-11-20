@@ -40,3 +40,16 @@ class ExpensePagination(PageNumberPagination):
         return Response(
             {"expenses": data, "page": self.page_number, "limit": self.limit, "total": self.total}
         )
+
+    def get_paginated_response_schema(self, schema):
+        """Tells the API docs what the list response looks like (used by drf-spectacular)."""
+        return {
+            "type": "object",
+            "properties": {
+                "expenses": schema,
+                "page": {"type": "integer", "example": 1},
+                "limit": {"type": "integer", "example": 10},
+                "total": {"type": "integer", "example": 37},
+            },
+            "required": ["expenses", "page", "limit", "total"],
+        }

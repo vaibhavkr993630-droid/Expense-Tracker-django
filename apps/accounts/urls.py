@@ -8,5 +8,5 @@ urlpatterns = [
     path("users/me", views.ProfileView.as_view(), name="user-me"),
     path("users/change-password", views.ChangePasswordView.as_view(), name="change-password"),
     # Legacy URL kept from the FastAPI API (PUT = rename, DELETE = delete account).
-    path("user", views.ProfileView.as_view(), name="user-legacy"),
+    path("user", views.LegacyProfileView.as_view(), name="user-legacy"),
 ]

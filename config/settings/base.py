@@ -136,6 +136,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {"signup": "5/min", "login": "10/min", "export": "30/min"},
     # The frontend expects {"detail": "..."} for every error.
     "EXCEPTION_HANDLER": "config.exceptions.api_exception_handler",
+    # drf-spectacular generates the OpenAPI schema from our views and serializers.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Money is returned as a JSON number (the old API did that), not a string.
     "COERCE_DECIMAL_TO_STRING": False,
 }
@@ -148,3 +150,23 @@ SIMPLE_JWT = {
 # How long analytics results stay cached (seconds). Changes to a user's expenses make their
 # cached results obsolete immediately (see apps/analytics/cache.py), so this is only an upper bound.
 ANALYTICS_CACHE_TTL = 300
+
+# --- API documentation (drf-spectacular) -----------------------------------------------
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Expense Tracker API",
+    "DESCRIPTION": (
+        "Track personal expenses, set monthly budgets with spending alerts, and view analytics.\n\n"
+        "**Authentication:** call `POST /login` (form fields `username` and `password`; the username "
+        "can also be the email), then click *Authorize* and paste the returned `access_token`."
+    ),
+    "VERSION": "2.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,  # do not list the schema endpoint inside the schema
+    "TAGS": [
+        {"name": "Authentication", "description": "Sign up and log in."},
+        {"name": "Users", "description": "The logged-in user's own account."},
+        {"name": "Expenses", "description": "Create, list, filter, update, delete and export expenses."},
+        {"name": "Budgets", "description": "Monthly budgets per category and alert status."},
+        {"name": "Analytics", "description": "Spending summaries (cached)."},
+        {"name": "Health", "description": "Liveness probe."},
+    ],
+}
