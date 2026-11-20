@@ -8,3 +8,4 @@ django-cors-headers>=4.4
 psycopg[binary]>=3.2
 fpdf2>=2.8
 gunicorn>=22.0
+whitenoise>=6.7

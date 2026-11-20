@@ -1,0 +1,23 @@
+# Keep the build context small and keep secrets / unrelated code out of the image.
+.git
+.gitignore
+.github
+.venv
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.db
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+staticfiles
+media
+docs
+frontend
+legacy_fastapi_reference
+CLAUDE.md
+AGENTS.md
+Dockerfile
+docker-compose.yml
