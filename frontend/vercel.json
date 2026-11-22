@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/login",    "has": [{ "type": "header", "key": "accept", "value": ".*text/html.*" }], "destination": "/index.html" },
+    { "source": "/expenses", "has": [{ "type": "header", "key": "accept", "value": ".*text/html.*" }], "destination": "/index.html" },
+    { "source": "/budgets",  "has": [{ "type": "header", "key": "accept", "value": ".*text/html.*" }], "destination": "/index.html" },
+    { "source": "/login",            "destination": "https://expense-tracker-django-6cax.onrender.com/login" },
+    { "source": "/signup",           "destination": "https://expense-tracker-django-6cax.onrender.com/signup" },
+    { "source": "/expenses/:path*",  "destination": "https://expense-tracker-django-6cax.onrender.com/expenses/:path*" },
+    { "source": "/budgets/:path*",   "destination": "https://expense-tracker-django-6cax.onrender.com/budgets/:path*" },
+    { "source": "/users/:path*",     "destination": "https://expense-tracker-django-6cax.onrender.com/users/:path*" },
+    { "source": "/healthy",          "destination": "https://expense-tracker-django-6cax.onrender.com/healthy" },
+    { "source": "/(.*)",             "destination": "/index.html" }
+  ]
+}
