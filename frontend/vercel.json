@@ -4,6 +4,8 @@
     { "source": "/expenses", "has": [{ "type": "header", "key": "accept", "value": ".*text/html.*" }], "destination": "/index.html" },
     { "source": "/budgets",  "has": [{ "type": "header", "key": "accept", "value": ".*text/html.*" }], "destination": "/index.html" },
     { "source": "/login",            "destination": "https://expense-tracker-django-6cax.onrender.com/login" },
+    { "source": "/expenses",          "destination": "https://expense-tracker-django-6cax.onrender.com/expenses" },
+    { "source": "/budgets",           "destination": "https://expense-tracker-django-6cax.onrender.com/budgets" },
     { "source": "/signup",           "destination": "https://expense-tracker-django-6cax.onrender.com/signup" },
     { "source": "/expenses/:path*",  "destination": "https://expense-tracker-django-6cax.onrender.com/expenses/:path*" },
     { "source": "/budgets/:path*",   "destination": "https://expense-tracker-django-6cax.onrender.com/budgets/:path*" },
