@@ -17,7 +17,5 @@ media
 docs
 frontend
 legacy_fastapi_reference
-CLAUDE.md
-AGENTS.md
 Dockerfile
 docker-compose.yml
